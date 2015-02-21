@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!--[if lt IE 9]>
+  <script src="http://html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+<![endif]-->
+  <title>Human-Computer Interaction Study</title>
+  <link type="text/css" href="libs/jplayer/skin/blue.monday/jplayer.blue.monday.css" rel="stylesheet" />
+  <link type="text/css" rel="stylesheet" href="stdsheet.css" />
+  <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6/jquery.min.js"></script>
+  <script type="text/javascript" src="libs/jplayer/jquery.jplayer.min.js"></script>
+  <script type="text/javascript" src="shared.js"></script>
+  <script type="text/javascript" src="postdata.js"></script>
+  <script type="text/javascript" src="jquery-urlvars.js"></script>
+  <script type="text/javascript" src="jquery-print.js"></script>
+  <script type="text/javascript" src="instrument_libs/rgbhsv.js"></script>
+  <script type="text/javascript" src="instrument_libs/scalifier.js"></script>
+  <script type="text/javascript" src="instrument_libs/linear_keymap.js"></script>
+  <script type="text/javascript" src="instrument_libs/samchillian_layout_leftright.js"></script>
+  <script type="text/javascript" src="instrument_libs/samchillian.js"></script>
+  <script type="text/javascript" src="instrument_libs/typerdrive.js"></script>
+  <script type="text/javascript" src="instrument_libs/glowboard.js"></script>
+  <script type="text/javascript" src="instrument_libs/loghelper.js"></script>
+  <script type="text/javascript" src="instrument_libs/scaledata.js"></script>
+
+  <script type="text/javascript"><!--
+    // DEBUG
+    $.print('7');
+
+    // Read php data.
+    var _php_input_data = '<!--@^^^PHPINPUTDATA^^^@-->';
+
+    // DEBUG
+    if (
+      $.getUrlVar('DEBUGMODE') &&
+      $.getUrlVar('DEBUGMODE').substring(0,4) == 'play') {
+      // Get URL arg.
+      _php_input_data = $.getUrlVar('DEBUGMODE').substring(5);
+    }
+
+    // Set pitch classes from php data (or set to adapt).
+    var pitch_classes = [];
+    var ADAPTING = false;
+    $.print("input data: "+_php_input_data);
+    switch(_php_input_data) {
+      case 'adapt':
+        pitch_classes = [0,2,4,7,9];
+        ADAPTING = true;
+        break;
+      case 'chrom':
+        pitch_classes = [0,1,2,3,4,5,6,7,8,9,10,11];
+        break;
+      case 'pent':
+        //pitch_classes = [0,2,4,7,9];
+        pitch_classes = [0,3,5,7,10];
+        break;
+      default:
+        var pitch_classes = $.map(_php_input_data.split('+'),
+            function(x) { return parseInt(x); });
+        break;
+    }
+
+    // To set the scale.
+    var SCALE_OFFSET = 4;
+    var TOTAL_NUM_JPLAYERS = null;
+    var player_ids = null;
+    
+    function setPitchClasses(updated_classes) {
+      pitch_classes = updated_classes;
+      Scalifier_init(pitch_classes, SCALE_OFFSET);  // E is offset by 4 from C.
+
+      // Set the number of keys. Be sure to choose the appropriate KeyMap
+      // function on the keyDown callback.
+      //var len_keys = 30;  // For all three rows on the keyboard.
+      var len_keys = 11;  // For the home row only.
+
+      // There are two options for dynamically setting the mapping:
+      // 1. To set 'Z' to most appropriate E, use these.
+      // The octave is chosen to include more notes close to the middle of the range.
+      /*
+      var E_pitches = [ 28, 40, 52, 64, 76, 88, 100 ];
+      var num_octaves = Math.floor(len_keys/pitch_classes.length);
+      var starting_pitch_index = Math.floor(E_pitches.length/2) - Math.floor(num_octaves/2);
+      starting_pitch_index = Math.min(E_pitches.length, starting_pitch_index);
+      starting_pitch_index = Math.max(0, starting_pitch_index);
+      var offset_pitch = E_pitches[starting_pitch_index];
+      var offset_key = 0;
+      */
+      // 2. To set 'A' key to middle E, use these.
+      var offset_pitch = 64;  // Middle E is 64.
+      //var offset_key = 10;  // Keyboard 'A' is 10th for all three rows.
+      var offset_key = 0;  // Keyboard 'A' is 0th for only home row.
+
+      // Once the offset has been chosen, define the mapping.
+      var step_at_offset = Scalifier_stepForNoteAbsolute(offset_pitch, true);
+      Scalifier_setRangeByStep(step_at_offset-offset_key, len_keys);
+
+      // Set the new scale.
+      player_ids = Scalifier_getScaleNotes();
+
+      // Set the enabled notes.
+      Glowboard_init($('#glowboard'), Scalifier_getMinPitch(), Scalifier_getMaxPitch());
+      Glowboard_setEnabled(player_ids);
+    }
+
+    $(document).ready(function(){
+
+      // Set resourceDir (must include backing tracks and audio samples).
+      var resourceDir = "http://www.cs.tufts.edu/~gwg/testbed/";
+
+      // Initialize typerdrive with all pitch classes.
+      var init_players = [];
+      var init_min = 40;
+      var init_max = 115;
+      TOTAL_NUM_JPLAYERS = init_max-init_min+1;  // Used by ready callback.
+      for (var i=init_min; i<init_max; i++) init_players.push(i);
+      Typerdrive_initJPlayers(init_players, resourceDir+"audio_files/sample_pit", $('#jplayer_list'), playerReady);
+      // Load the UI.
+      setPitchClasses(pitch_classes);
+
+      // Load the backup band.
+      $('#jquery_jplayer_visible').jPlayer({
+        ready: function() {
+          $(this).jPlayer("setMedia", {
+            mp3: resourceDir + "tracks/backing_track_organ.mp3",
+            m4a: resourceDir + "tracks/backing_track_organ.m4a",
+            oga: resourceDir + "tracks/backing_track_organ.ogg"
+          });
+          if ($('#instructions_perform').css('display') != 'none')
+            $(this).jPlayer("play");
+          playerReady('visible');
+        },
+        play: function() {
+          $('#jquery_jplayer_visible').jPlayer('volume', 0.4);
+        },
+        timeupdate: function() {
+          ScaleChanger_frame();
+        },
+        swfPath: "libs/jplayer/",
+        cssSelectorAncestor: "#jp_container_visible",
+        supplied: "mp3, m4a, oga",
+        preload: "auto",
+        volume: 1.0,
+        wmode: "window",
+        ended: function() { playbackFinished(); }
+      });
+
+      // Generate and insert html for the players.
+      //Typerdrive_initJPlayers(player_ids, resourceDir+"audio_files/sample_pit", $('#jplayer_list'), playerReady);
+
+      // Create the glowboard UI.
+      //Glowboard_init($("#glowboard"), Scalifier_getMinPitch(), Scalifier_getMaxPitch());
+      //Glowboard_setEnabled(player_ids);
+
+    });  // End ready function.
+
+    var PRESSED_KEYS = {};
+    function onKeyDown(e) {
+      e.preventDefault();
+      if (!(PRESSED_KEYS[e.which] >= 0)) {
+        $.print("key: "+e.which);
+        //var note = samChillianSendInput(e.which);
+        //var note = Scalifier_noteAtStep(KeyMap_linearFull(e.which));
+        var note = Scalifier_noteAtStep(KeyMap_linearHomerow(e.which));
+        if (note != null) {
+          $.print("pitch: "+note);
+          PRESSED_KEYS[e.which] = note;
+          Glowboard_noteOn(note);
+          Typerdrive_noteOn(note);
+          logEvent('noteon_'+note);
+        }
+      }
+    }
+    function onKeyUp(e) {
+      e.preventDefault();
+      var note = PRESSED_KEYS[e.which];
+      Glowboard_noteOff(note);
+      Typerdrive_noteOff(note);
+      logEvent('noteoff_'+note);
+      PRESSED_KEYS[e.which] = -1;
+    }
+
+    // Dummy.
+    $(document).keydown(function() { var x = 3; });
+    $(document).keyup(function() { var x = 3; });
+
+    // For changing the keyboard in real time, use an animation model.
+    //var ScaleChanger_ms = 100;  // Set to 100 for 10 fps.
+    //var ScaleChanger_timer = null;
+    var ScaleChanger_textdata = SCALE_DATA;  // Read from scaledata.js.
+    var ScaleChanger_events = LogHelper_parse(ScaleChanger_textdata);
+    var ScaleChanger_audioDuration = 0;
+    var ScaleChanger_currEvent = null;
+    var ScaleChanger_counter = null;
+
+    function ScaleChanger_init() {
+      var audio_length_string = $('#jp_container_visible .jp-duration').html();
+      var audio_length_parts = audio_length_string.split(':');
+      ScaleChanger_audioDuration = parseInt(audio_length_parts[0])*60+parseInt(audio_length_parts[1]);
+      ScaleChanger_counter = 0;
+    }
+    /*
+    function ScaleChanger_start() {
+      if (ScaleChanger_timer === null) {
+        ScaleChanger_counter = 0;
+        ScaleChanger_timer = setInterval("ScaleChanger_frame()", ScaleChanger_ms);
+      }
+    }
+    */
+    function ScaleChanger_frame() {
+      if (ScaleChanger_counter === null) return;
+      if (ScaleChanger_counter >= ScaleChanger_events.length) return;
+      var numerator = parseFloat($('#jp_container_visible .jp-play-bar').css('width'));
+      var denominator = parseFloat($('#jp_container_visible .jp-progress').css('width'));
+      var time = numerator/denominator*ScaleChanger_audioDuration;
+      ScaleChanger_currEvent = ScaleChanger_events[ScaleChanger_counter];
+      while (ScaleChanger_currEvent.time < time) {
+        switch(ScaleChanger_currEvent.action) {
+          case 'scale':
+            $.print("change to "+ScaleChanger_currEvent.data);
+            var update = $.map(ScaleChanger_currEvent.data.split('+'),
+                function(x) { return parseInt(x); });
+            setPitchClasses(update);
+            break;
+          default:
+            $.print("Unrecognized event: "+ScaleChanger_currEvent.action);
+            break;
+        }
+        ScaleChanger_counter++;
+        /*
+        if (ScaleChanger_counter >= ScaleChanger_events.length) {
+          clearInterval(ScaleChanger_timer);
+          break;
+        }
+        */
+        ScaleChanger_currEvent = ScaleChanger_events[ScaleChanger_counter];
+      }
+    }
+  //-->
+  </script>
+
+  <!-- Begin non-instrument content -->
+  <style type="text/css">
+    .instructionbox {
+      min-height:100px;
+      max-width:700px;
+    }
+  </style>
+  <script type="text/javascript"><!--
+    var logging_data = [];
+    var logging_start = null;
+
+    var playersReadyCounter = 0;
+    var allPlayersReadyFlag = false;
+
+    var animationSpeed = 'fast';
+    postDataStatusDiv = "#statusdiv";
+
+    var notesCounter = 0;
+
+    function _logEvent(description) {
+      var t_now = new Date().getTime();
+      if (logging_start === null) logging_start = t_now;
+      var t_log = t_now - logging_start;
+      logging_data.push(t_log + ":'" + description + "'");
+    }
+    function logEvent(description) {}
+
+    function finish() {
+      var data = logging_data.toString();
+      //postDataAndRedirect('primedata', data, 'task');
+    }
+
+    function allPlayersReady() {
+      allPlayersReadyFlag = true;
+    }
+
+    function playerReady(player_id) {
+      $.print("ready announcement: "+player_id);
+      playersReadyCounter++;
+      //if (playersReadyCounter >= player_ids.length + 1) {
+      if (playersReadyCounter >= TOTAL_NUM_JPLAYERS) {
+        allPlayersReady();
+      }
+    }
+
+    function setStateTryInstrument() {
+      $('#instructions_try button').prop('disabled',true);  // Needed for FireFox.
+      $('.jp-jplayer').jPlayer("volume", 100);
+      $('#instructions_init').hide(animationSpeed);
+      $('#instructions_try').show(animationSpeed);
+      $('#glowboard').show(animationSpeed);
+      logEvent = function(description) {
+        var button = $('#instructions_try button');
+        if (description.indexOf('noteon') == 0) notesCounter++;
+        if (notesCounter > 10) {
+          button.removeProp('disabled');
+          button.html('Click to continue');
+          button.hide('fast', function() { button.show('fast'); });
+          logEvent = function() {};
+        }
+      };
+    }
+
+    function setStatePerform() {
+      $('#instructions_try').hide(animationSpeed);
+      $('#instructions_perform').show(animationSpeed);
+      $('#visible_jplayer').show(animationSpeed);
+      if (ADAPTING) ScaleChanger_init();
+      $('#jquery_jplayer_visible').jPlayer("play");
+      logEvent = _logEvent;
+      _logEvent("play");
+    }
+
+    function playbackFinished() {
+      $('#visible_jplayer').hide(animationSpeed);
+      $('#glowboard').hide(animationSpeed);
+      $('#statusdiv').html("Submitting...");
+      _logEvent('finished');
+      logEvent = function() { };
+      finish();
+    }
+
+    function addKeyListeners() {
+      // Add keyboard listeners.
+      $(document).keydown(function(e) { onKeyDown(e); });
+      $(document).keyup(function(e) { onKeyUp(e); });
+    }
+
+    $(document).ready(function() {
+      _logEvent('pageload');
+      $('.jp-jplayer').jPlayer("volume",0);
+      if (allPlayersReadyFlag) addKeyListeners();
+      else allPlayersReady = function() { addKeyListeners(); };
+    });
+
+    /*
+    function debugclick() {
+      var numerator = parseFloat($('#jp_container_visible .jp-play-bar').css('width'));
+      var denominator = parseFloat($('#jp_container_visible .jp-progress').css('width'));
+      var time = numerator/denominator*ScaleChanger_audioDuration;
+      $.print(time);
+    }
+    */
+
+    //-->
+  </script>
+  <!-- End non-instrument content -->
+<script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-31086375-1']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+
+</head>
+<body>
+  <div id="jquery_jplayer_visible" class="jp-jplayer"></div>
+  <div id="jplayer_list" style="max-height:0px;overflow:hidden;"></div>
+  <div id="content" align="center">
+    <!--Begin non-instrument content-->
+    <h1>Music playing portion</h1>
+    <p class="pagenumberheader">HIT page 3 of 4</p>
+    <div id="instructions">
+      <div id="instructions_init" class="instructionbox">
+        <p>
+        In this portion of the study you will be creating some music using a simple keyboard-based interface.
+        There are no specific requirements as to what you create,
+        so don't worry about performing "correctly",
+        just be creative and have fun.
+        </p>
+        <p>
+        You will first be given an opportunity to try playing the instrument without any
+        accompaniment.
+        Afterwards, you will play along with a backing track.
+        The survey will automatically continue when the track finishes.
+        </p>
+        <p>
+        <b>The instrument is configured for a qwerty keyboard layout</b>,<br>
+        so if you are using an alternate layout please set your keyboard to qwerty.
+        </p>
+        <p><button onclick="javascript:setStateTryInstrument();">Click to continue</button></p>
+      </div>
+      <div id="instructions_try" class="instructionbox" style="display:none">
+        <p>
+        Below you is the instrument you will be playing. 
+        It is controlled by the middle row of keys on
+        the keyboard 
+        (A, S, D, F... through the apostrophe key).
+        Each key corresponds to
+        one pitch on the instrument, and the pitches are ordered
+        by the position of the keys on the keyboard.
+        Try it out for a bit until you feel comfortable.
+        </p>
+        <p>
+        When you're ready to play along with the backing track,
+        click the button below.
+        </p>
+        <p><button onclick="javascript:setStatePerform();" disabled="disabled">Please try playing a few notes</button></p>
+      </div>
+      <div id="instructions_perform" class="instructionsbox" style="display:none">
+        <p>
+        Please play along with the accompaniment.
+        </p>
+      </div>
+    </div>
+    <div id="statusdiv" style="color:#f00;"></div>
+    <!--End non-instrument content-->
+    <div id="visible_jplayer" style="margin:10px auto;display:none;">
+      <div id="jp_container_visible" class="jp-audio" style="text-align:left">
+        <div class="jp-type-single">
+          <div class="jp-gui jp-interface">
+            <div class="jp-progress">
+              <div class="jp-play-bar"></div>
+            </div>
+            <div class="jp-time-holder">
+              <div class="jp-current-time"></div>
+              <div class="jp-duration"></div>
+            </div>
+          </div>
+          <div class="jp-no-solution">
+            <span>Update Required</span>
+            To play the media you will need to either update your browser to a recent version or update your <a href="http://get.adobe.com/flashplayer/" target="_blank">Flash plugin</a>.
+          </div>
+        </div>
+      </div>
+    </div><!--End visible jplayer-->
+    <div id="glowboard" style="align:center;width:80%;height:100px;background-color:0;display:none"></div>
+    <!-- Begin non-instrument content -->
+    <div id="errordiv">
+      <p>No sound? Check your headphones/speakers, wait for the page to finish loading if it's not done, or try refreshing the page. <br>If you think the study 
+    is broken, <a href="javascript:goToStudyState('reporterr');">go here</a>
+    and report the error.</p>
+  </div>
+  </div>
+  <div id="footer"><p>If you have questions or concerns, please contact the study coordinator, Garth, at <a href="mailto:gwg@cs.tufts.edu">gwg@cs.tufts.edu</a>.</p></div>
+    <!-- End non-instrument content -->
+</body>
+</html>
+

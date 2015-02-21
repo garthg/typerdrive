@@ -1,7 +1,8 @@
 # typerdrive
 Typerdrive: An adaptive keyboard instrument.
 
-# Setup
+Setup
+-----
 
 For instructions on setting up the audio generation pipeline, see:
 src/audio/readme_audio_generation.txt
