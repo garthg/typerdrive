@@ -1,6 +1,11 @@
 # typerdrive
 Typerdrive: An adaptive keyboard instrument.
 
+This project was done as part of a human-computer interaction research study
+at Tufts University by Garth Griffin (http://garthgriffin.com) and Robert Jacob
+(http://www.cs.tufts.edu/~jacob/). The publication is available at:
+http://www.cs.tufts.edu/~jacob/papers/candc13.pdf
+
 Setup
 -----
 
