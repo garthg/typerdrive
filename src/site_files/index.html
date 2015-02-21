@@ -1,0 +1,111 @@
+<html>
+  <head>
+    <title>Typerdrive: An adaptive computer keyboard instrument</title>
+  <link type="text/css" rel="stylesheet" href="stdsheet.css" />
+  <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.6/jquery.min.js"></script>
+  <script type="text/javascript"><!--
+
+    function loadcustom() {
+      var data = $('#customscaleform').serialize();
+      var params = data.replace(/scalenote=/g, '').replace(/&/g, '+');
+      var url = "playinstrument.html?DEBUGMODE=play_"+params;
+      window.location.href = url;
+    }
+
+
+    //-->
+  </script>
+  <script type="text/javascript">
+
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-31086375-1']);
+  _gaq.push(['_trackPageview']);
+
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+
+</script>
+  </head>
+  <body>
+    <h1>Typerdrive: An adaptive computer keyboard instrument</h1>
+    <h3>What this is</h3>
+    <p>
+      I am doing a human-computer interaction research study on 
+      Mechanical Turk that involved a music creation portion with
+      an instrument I'm developing.
+      I received some
+      <a href="http://www.reddit.com/r/HITsWorthTurkingFor/comments/slpui/us_humancomputer_interaction_study_garth_griffin/">positive feedback</a>
+      about it on Reddit, so I wanted to make the fun part of the HIT
+      available to anyone who didn't get a chance to do it
+      on Mechanical Turk. Right now it's just that page from the study,
+      but if I get a chance I'll try to clean it up a bit and make it easier
+      to use.
+      Fair warning: it works best on Chrome, though Firefox and IE9 seem to be
+      pretty okay; older computers may not do well with it.
+    </p>
+    <h3>Play the instrument</h3>
+    <p>
+    The instrument can be configured in different ways.
+    At the moment, there is only one backing track to play along with,
+    but there are a few different ways the keyboard can be layed out.
+    </p>
+    <p>
+    <ul>
+      <li><a href="playinstrument.html?DEBUGMODE=play_chrom">Play with all notes available (chromatic scale)</a></li>
+      <li><a href="playinstrument.html?DEBUGMODE=play_pent">Play with a single scale, chosen specifically for the backing track (pentatonic scale)</a></li>
+      <li><a href="playinstrument.html?DEBUGMODE=play_adapt">Play the adaptive version</a></li>
+    </ul>
+    </p>
+    <p>
+    You can also make your own scale by choosing from the checkboxes below.
+    <br>
+    <form id="customscaleform">
+    <table>
+      <tr>
+        <td>0</td>
+        <td>1</td>
+        <td>2</td>
+        <td>3</td>
+        <td>4</td>
+        <td>5</td>
+        <td>6</td>
+        <td>7</td>
+        <td>8</td>
+        <td>9</td>
+        <td>10</td>
+        <td>11</td>
+      </tr>
+      <tr>
+        <td><input type="checkbox" name="scalenote" value="0" /></td>
+        <td><input type="checkbox" name="scalenote" value="1" /></td>
+        <td><input type="checkbox" name="scalenote" value="2" /></td>
+        <td><input type="checkbox" name="scalenote" value="3" /></td>
+        <td><input type="checkbox" name="scalenote" value="4" /></td>
+        <td><input type="checkbox" name="scalenote" value="5" /></td>
+        <td><input type="checkbox" name="scalenote" value="6" /></td>
+        <td><input type="checkbox" name="scalenote" value="7" /></td>
+        <td><input type="checkbox" name="scalenote" value="8" /></td>
+        <td><input type="checkbox" name="scalenote" value="9" /></td>
+        <td><input type="checkbox" name="scalenote" value="10" /></td>
+        <td><input type="checkbox" name="scalenote" value="11" /></td>
+      </tr>
+    </table>
+  </form>
+    <a href="javascript:loadcustom();">Load</a>
+    </p>
+
+    <h3>Who I am</h3>
+    <p>
+    My name is Garth Griffin.
+    I am a computer science graduate student at Tufts University.
+    I study human-computer interaction, focusing on technologies for
+    creativity. You can read more about me at
+    <a href="http://garthgriffin.com">garthgriffin.com</a>.
+    You can contact me at
+    <a href="mailto:gwg@cs.tufts.edu">gwg@cs.tufts.edu</a>.
+    </p>
+  </body>
+</html>
